@@ -11,7 +11,8 @@ import numpy as np
 import random
 from torchvision import datasets, models, transforms
 import torch.nn as nn
-import tqdm
+import torchvision.transforms.functional as F
+
 #### WHEN TESTING, USE THE SIGMOID ACTIVATION FUNCTION TO DETERMINE IF IT IS ONE
 #### OR A ZERO
 class LEAFSGOAL(torch.nn.Module):
@@ -46,7 +47,7 @@ class LEAFSGOAL(torch.nn.Module):
 
     def forward(self, xb):
         return self.network(xb)
-if True:
+if False:
     model = torch.load("MapleLeafsGoalDetector.pt")
 else:
     model = models.resnet18(pretrained=True)
@@ -56,22 +57,21 @@ else:
     nr_filters = model.fc.in_features  #number of input features of last layer
     model.fc = nn.Linear(nr_filters, 1)
     print(nr_filters)
-transform = transforms.Compose([transforms.Resize((224,224)),
-                                       transforms.ToTensor(),
-                                       transforms.Normalize(
-                                           mean=[0.485, 0.456, 0.406],
-                                           std=[0.229, 0.224, 0.225],
-                                           )
+transform = transforms.Compose([       transforms.ToTensor(),
+                                    #    transforms.Normalize(
+                                    #        mean=[0.485, 0.456, 0.406],
+                                    #        std=[0.229, 0.224, 0.225],
+                                    #        )
                                 ])
 
-dataset = datasets.ImageFolder('../Train/', transform=transform)
-v_data = datasets.ImageFolder('../Test/', transform=transform)
-trainloader = torch.utils.data.DataLoader(dataset, batch_size=16, shuffle=True)
-testloader = torch.utils.data.DataLoader(v_data, batch_size=16, shuffle=True)
-optimizer = torch.optim.Adam(model.parameters(), lr = 0.0001)
+dataset = datasets.ImageFolder('Train/', transform=transform)
+# v_data = datasets.ImageFolder('Train/', transform=transform)
+trainloader = torch.utils.data.DataLoader(dataset, batch_size=1, shuffle=True)
+# testloader = torch.utils.data.DataLoader(v_data, batch_size=16, shuffle=True)
+optimizer = torch.optim.Adam(model.parameters(), lr = 0.00001)
 loss = torch.nn.modules.loss.BCEWithLogitsLoss()
 print(len(trainloader))
-print(len(testloader))
+# print(len(testloader))
 
 averr = []
 
@@ -79,10 +79,13 @@ epoch_train_losses = []
 epoch_test_losses = []
 val_losses = []
 
-for epoch in range(20):
+for epoch in range(1):
     print(epoch+1)
     epoch_loss = 0
     for x_batch, y_batch in trainloader: #iterate ove batches
+        # image = F.to_pil_image(x_batch[0])
+        plt.imshow(  x_batch[0].permute(1, 2, 0)  )
+        plt.show()
         y_batch = y_batch.unsqueeze(1).float() #convert target to same nn output shape
 
         #make prediction
@@ -95,32 +98,31 @@ for epoch in range(20):
         l.backward()
         optimizer.step()
         optimizer.zero_grad()
-        #optimizer.cleargrads()
         epoch_loss += l/len(trainloader)
 
     epoch_train_losses.append(epoch_loss.detach().numpy())
     print('\nEpoch : {}, train loss : {}'.format(epoch+1,epoch_loss))
 
-    #validation doesnt requires gradient
-    with torch.no_grad():
-        cum_loss = 0
-        for x_batch, y_batch in testloader:
-            y_batch = y_batch.unsqueeze(1).float()
+    # #validation doesnt requires gradient
+    # with torch.no_grad():
+    #     cum_loss = 0
+    #     for x_batch, y_batch in testloader:
+    #         y_batch = y_batch.unsqueeze(1).float()
 
-            #model to eval mode
-            model.eval()
+    #         #model to eval mode
+    #         model.eval()
 
-            yhat = model(x_batch)
-            val_loss = loss(yhat,y_batch)
-            cum_loss += val_loss/len(testloader)
-            val_losses.append(val_loss.item())
-    epoch_test_losses.append(cum_loss.detach().numpy())
+    #         yhat = model(x_batch)
+    #         val_loss = loss(yhat,y_batch)
+    #         cum_loss += val_loss/len(testloader)
+    #         val_losses.append(val_loss.item())
+    # epoch_test_losses.append(cum_loss.detach().numpy())
 
-torch.save(model, "MapleLeafsGoalDetector.pt")
+    torch.save(model, "MapleLeafsGoalDetector.pt")
 
 plt.figure()
 
 plt.ylim([0, 1])
-plt.plot(epoch_test_losses)
+# plt.plot(epoch_test_losses)
 plt.plot(epoch_train_losses)
 plt.show()

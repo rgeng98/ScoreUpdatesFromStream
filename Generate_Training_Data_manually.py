@@ -4,30 +4,28 @@ from mss import mss
 from mss import tools
 from PIL import Image
 import keyboard
-mon = {'left': 85, 'top': 45, 'width': 700, 'height': 150}
+import pyautogui
+mon = {'left': 85, 'top': 45, 'width': 900, 'height': 450}
+r = (85, 45, 900, 450)
 global ticker
 global count
 ticker = 1
-count = 1
+count = 200
+
 def grab_ss():
     global ticker
     global count
-    with mss() as sct:
-        screenShot = sct.grab(mon)
-        img = Image.frombytes(
-            'RGB',
-            (screenShot.width, screenShot.height),
-            screenShot.rgb,
-        )
-        tools.to_png(screenShot.rgb, screenShot.size, output = "Train/0/lightning"+str(count)+".png")
-        if ticker == 1:
-            ticker = 0
-        else:
-            ticker = 1
-        count=count+1
+    screenShot = pyautogui.screenshot(region=r)
+    screenShot.save("Train/0/image"+str(count)+".png")
+    if ticker == 1:
+        ticker = 0
+    else:
+        ticker = 1
+    count=count+1
 
 
-keyboard.add_hotkey(' ', lambda: grab_ss())
+keyboard.add_hotkey('a', lambda: grab_ss())
 
+print('Starting')
 while True:
     pass
